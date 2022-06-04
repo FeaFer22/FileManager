@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace FileManager.ViewModels.Base
 {
+    //Модель представления 
     internal abstract class ViewModel : INotifyPropertyChanged, IDisposable
     {
         public event PropertyChangedEventHandler PropertyChanged;
