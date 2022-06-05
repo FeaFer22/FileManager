@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 
 namespace FileManager.ViewModels.Base
 {
-    //Модель представления 
     internal abstract class ViewModel : INotifyPropertyChanged, IDisposable
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -21,10 +20,7 @@ namespace FileManager.ViewModels.Base
             OnPropertyChanged(PropertyName);
             return true;
         }
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() => throw new NotImplementedException();
         private bool _Disposed;
         protected virtual void Dispose(bool Disposing)
         {
