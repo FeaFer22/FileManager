@@ -25,13 +25,13 @@
             <fa:ImageAwesome Icon="Solid_ArrowLeft" Width="20" Height="15" Margin="10,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.48,1.072"/>
             <fa:ImageAwesome Icon="Solid_ArrowRight" Width="20" Height="15" Margin="40,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.507,1.205"/>
             <TextBox Margin="70,10,105,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding Path}"/>
-            <Button Content="Перейти" Margin="0,10,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Height="20" Width="90"/>
-            <DataGrid Margin="10,40,10,10" ColumnWidth="100*" AutoGenerateColumns="False" ItemsSource="{Binding Dirs}">
+            <Button Content="Перейти" Margin="0,10,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Height="20" Width="90" Command="{Binding GetItemInfoCommand}"/>
+            <DataGrid Margin="10,40,10,10" ColumnWidth="100*" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" ItemsSource="{Binding ItemsInfo}" GridLinesVisibility="None">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Имя" Binding="{Binding Name}"/>
-                    <DataGridTextColumn Header="Дата изменения" Binding="{Binding DateChanged}"/>
-                    <DataGridTextColumn Header="Тип" />
-                    <DataGridTextColumn Header="Размер"/>
+                    <DataGridTextColumn Header="Дата изменения" Binding="{Binding DateChanged}" />
+                    <DataGridTextColumn Header="Тип" Binding="{Binding Type}"/>
+                    <DataGridTextColumn Header="Размер" Binding="{Binding Size}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

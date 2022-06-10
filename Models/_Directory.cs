@@ -1,23 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FileManager.Models
 {
-    internal class File
+    internal class _File : IItemInfo
     {
         public string Name { get; set; }
         public DateTime DateChanged { get; set; }
-        public string Size { get; set; }
-
+        public long Size { get; set; }
         public string Type { get; set; }
     }
-    internal class _Directory
-    {
+    internal class _Directory : IItemInfo
+    { 
         public string Name { get; set; }
         public DateTime DateChanged { get; set; }
-        public ICollection<File> Files { get; set; }
+        public long Size { get; set; }
+        public string Type { get; set; }
     }
 }

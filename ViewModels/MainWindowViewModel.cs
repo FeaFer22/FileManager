@@ -15,6 +15,8 @@ namespace FileManager.ViewModels
 
         private DirectoryInfo Dir;
         private DirectoryInfo[] _Dirs;
+        private FileInfo[] _Files;
+        private ObservableCollection<_Directory> _ItemsInfo;
 
         #region Заголовок окна
 
@@ -34,10 +36,10 @@ namespace FileManager.ViewModels
         #endregion
 
         #region Путь
+
+        ///<summary>Путь</summary>
+
         private string _Path = "C:\\";
-        ///<summary>
-        ///Путь
-        ///</summary>
         public string Path
         {
             get => _Path;
@@ -49,19 +51,19 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        ///<summary>
-        ///Директория
-        ///</summary>
-        public DirectoryInfo[] Dirs
+        #region Получение информации о объекте
+
+        ///<summary>Получение информации о объекте</summary>
+        public ObservableCollection<_Directory> ItemsInfo
         {
-            get => _Dirs;
+            get => _ItemsInfo;
             set
             {
-                Set(ref _Dirs, value);
+                Set(ref _ItemsInfo, value);
             }
         }
 
-
+        #endregion
 
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -77,26 +79,57 @@ namespace FileManager.ViewModels
 
         #endregion
 
+        #region GetItemInfoCommand
+
+        public ICommand GetItemInfoCommand { get; }
+
+        private bool CanGetItemInfoCommandExecute(object obj) => true;
+
+        private void OnGetItemInfoCommandExecuted(object obj) 
+        {
+            _ItemsInfo.Clear();
+            foreach (DirectoryInfo currentDir in _Dirs)
+            { 
+                _ItemsInfo.Add(new _Directory
+                {
+                    Name = currentDir.Name,
+                    Type = "Папка с файлами",
+                    DateChanged = currentDir.LastWriteTime
+                });
+            }
+            foreach (FileInfo currentFile in _Files)
+            {
+                _ItemsInfo.Add(new _Directory
+                {
+                    Name = currentFile.Name,
+                    Type = currentFile.Extension.ToString(),
+                    DateChanged = currentFile.LastWriteTime,
+                    Size = currentFile.Length
+                });
+            }
+            _Path = Dir.FullName.ToString();
+        }
+
+        #endregion
+
         #endregion
 
         /*---------------------------------------------------------------------------------------------------------------*/
         public MainWindowViewModel()
         {
+
             #region Команды
 
             CloseApplicationCommand = new ActionCommand(OnCloseApplicationCommandExecuted, CanCloseApplicationCommandExecute);
+
+            GetItemInfoCommand = new ActionCommand(OnGetItemInfoCommandExecuted, CanGetItemInfoCommandExecute);
 
             #endregion
 
             Dir = new DirectoryInfo(_Path);
             _Dirs = Dir.GetDirectories();
-
-            var Dirs = new ObservableCollection<_Directory>();
-
-            foreach (DirectoryInfo currentDir in _Dirs)
-            {
-                Dirs.Add(new _Directory { Name = currentDir.Name, DateChanged = currentDir.LastWriteTime});
-            }
+            _Files = Dir.GetFiles();
+            _ItemsInfo = new ObservableCollection<_Directory>();
 
         }
     }
