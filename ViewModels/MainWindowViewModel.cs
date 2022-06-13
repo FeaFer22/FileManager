@@ -1,9 +1,11 @@
-﻿using FileManager.Infrastructure.Commands;
+﻿using System;
+using FileManager.Infrastructure.Commands;
 using FileManager.Models;
 using FileManager.ViewModels.Base;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -16,7 +18,7 @@ namespace FileManager.ViewModels
         private DirectoryInfo Dir;
         private DirectoryInfo[] _Dirs;
         private FileInfo[] _Files;
-        private ObservableCollection<_Directory> _ItemsInfo;
+        private ObservableCollection<Item> _ItemsInfo;
 
         #region Заголовок окна
 
@@ -35,17 +37,17 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        #region Путь
+        #region Путь к объекту
 
-        ///<summary>Путь</summary>
+        ///<summary>Путь к объекту</summary>
 
-        private string _Path = "C:\\";
-        public string Path
+        private string _PathToItem;
+        public string PathToItem
         {
-            get => _Path;
+            get => _PathToItem;
             set
-            {
-                Set(ref _Path, value);
+            {   
+                Set(ref _PathToItem, value);
             }
         }
 
@@ -54,7 +56,7 @@ namespace FileManager.ViewModels
         #region Получение информации о объекте
 
         ///<summary>Получение информации о объекте</summary>
-        public ObservableCollection<_Directory> ItemsInfo
+        public ObservableCollection<Item> ItemsInfo
         {
             get => _ItemsInfo;
             set
@@ -79,36 +81,54 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        #region GetItemInfoCommand
+        #region OpenSelectedItemCommand
 
-        public ICommand GetItemInfoCommand { get; }
+        public ICommand OpenSelectedItemCommand { get; }
 
-        private bool CanGetItemInfoCommandExecute(object obj) => true;
+        private bool CanOpenSelectedItemCommandExecute(object obj) => true;
 
-        private void OnGetItemInfoCommandExecuted(object obj) 
+        private void OnOpenSelectedItemCommandExecuted(object obj)
         {
-            _ItemsInfo.Clear();
+            ItemsInfo.Clear();
+
+            Dir = new DirectoryInfo(_PathToItem);
+
+            if (Dir.Exists == true && Dir != null)
+            {
+                _Dirs = Dir.GetDirectories();
+                _Files = Dir.GetFiles();
+                _PathToItem = Dir.FullName;
+                Dir = new DirectoryInfo(_PathToItem);
+            }
+            else
+            {
+                MessageBox.Show("Путь не найден!", "Файловый менеджер");
+            }
+
             foreach (DirectoryInfo currentDir in _Dirs)
-            { 
-                _ItemsInfo.Add(new _Directory
+            {
+                _ItemsInfo.Add(new Item
                 {
-                    Name = currentDir.Name,
-                    Type = "Папка с файлами",
-                    DateChanged = currentDir.LastWriteTime
+                    ItemName = currentDir.Name,
+                    ItemType = "Папка с файлами",
+                    ItemDateChanged = currentDir.LastWriteTime,
+                    ItemSize = 0,
+                    ItemPath = currentDir.FullName
                 });
             }
             foreach (FileInfo currentFile in _Files)
             {
-                _ItemsInfo.Add(new _Directory
+                _ItemsInfo.Add(new Item
                 {
-                    Name = currentFile.Name,
-                    Type = currentFile.Extension.ToString(),
-                    DateChanged = currentFile.LastWriteTime,
-                    Size = currentFile.Length
+                    ItemName = currentFile.Name,
+                    ItemType = currentFile.Extension,
+                    ItemDateChanged = currentFile.LastWriteTime,
+                    ItemSize = currentFile.Length / 1024 / 1024 / 1024,
+                    ItemPath = currentFile.FullName
                 });
             }
-            _Path = Dir.FullName.ToString();
         }
+
 
         #endregion
 
@@ -122,15 +142,23 @@ namespace FileManager.ViewModels
 
             CloseApplicationCommand = new ActionCommand(OnCloseApplicationCommandExecuted, CanCloseApplicationCommandExecute);
 
-            GetItemInfoCommand = new ActionCommand(OnGetItemInfoCommandExecuted, CanGetItemInfoCommandExecute);
+            OpenSelectedItemCommand = new ActionCommand(OnOpenSelectedItemCommandExecuted, CanOpenSelectedItemCommandExecute);
 
             #endregion
 
-            Dir = new DirectoryInfo(_Path);
-            _Dirs = Dir.GetDirectories();
-            _Files = Dir.GetFiles();
-            _ItemsInfo = new ObservableCollection<_Directory>();
+            _ItemsInfo = new ObservableCollection<Item>();
 
+            foreach (var logicalDrive in Directory.GetLogicalDrives())
+            {
+                _PathToItem = logicalDrive;
+                _ItemsInfo.Add(new Item
+                {
+                    ItemName = logicalDrive,
+                    ItemType = "Локальный диск",
+                    ItemDateChanged = DateTime.Now,
+                    ItemPath = logicalDrive
+                });
+            }
         }
     }
 }
