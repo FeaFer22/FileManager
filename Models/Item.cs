@@ -1,9 +1,8 @@
 ﻿using System;
-using System.IO.Packaging;
 
 namespace FileManager.Models
 {
-    internal interface IItemInfo
+    internal class Item : IItemInfo
     {
         public string ItemName { get; set; }
         public DateTime ItemDateChanged { get; set; }
