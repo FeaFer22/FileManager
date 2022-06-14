@@ -46,7 +46,7 @@ namespace FileManager.ViewModels
         {
             get => _PathToItem;
             set
-            {   
+            {
                 Set(ref _PathToItem, value);
             }
         }
@@ -81,51 +81,15 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        #region OpenSelectedItemCommand
+        #region UpdateItemsInfoFromPathCommand
 
-        public ICommand OpenSelectedItemCommand { get; }
+        public ICommand UpdateItemsInfoFromPathCommand { get; }
 
-        private bool CanOpenSelectedItemCommandExecute(object obj) => true;
+        private bool CanUpdateItemsInfoFromPathCommandExecute(object obj) => true;
 
-        private void OnOpenSelectedItemCommandExecuted(object obj)
+        private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
-            ItemsInfo.Clear();
-
-            Dir = new DirectoryInfo(_PathToItem);
-
-            if (Dir.Exists == true && Dir != null)
-            {
-                _Dirs = Dir.GetDirectories();
-                _Files = Dir.GetFiles();
-                _PathToItem = Dir.FullName;
-                Dir = new DirectoryInfo(_PathToItem);
-            }
-            else
-            {
-                MessageBox.Show("Путь не найден!", "Файловый менеджер");
-            }
-
-            foreach (DirectoryInfo currentDir in _Dirs)
-            {
-                _ItemsInfo.Add(new Item
-                {
-                    ItemName = currentDir.Name,
-                    ItemType = "Папка с файлами",
-                    ItemDateChanged = currentDir.LastWriteTime,
-                    ItemSize = 0,
-                    ItemPath = currentDir.FullName
-                });
-            }
-            foreach (FileInfo currentFile in _Files)
-            {
-                _ItemsInfo.Add(new Item
-                {
-                    ItemName = currentFile.Name,
-                    ItemType = currentFile.Extension.ToString(),
-                    ItemDateChanged = currentFile.LastWriteTime,
-                    ItemSize = currentFile.Length
-                });
-            }
+            GetItemsInfoFromPath();
         }
 
 
@@ -141,12 +105,22 @@ namespace FileManager.ViewModels
 
             CloseApplicationCommand = new ActionCommand(OnCloseApplicationCommandExecuted, CanCloseApplicationCommandExecute);
 
-            OpenSelectedItemCommand = new ActionCommand(OnOpenSelectedItemCommandExecuted, CanOpenSelectedItemCommandExecute);
+            UpdateItemsInfoFromPathCommand = new ActionCommand(OnUpdateItemsInfoFromPathCommandExecuted, CanUpdateItemsInfoFromPathCommandExecute);
 
             #endregion
 
             _ItemsInfo = new ObservableCollection<Item>();
 
+            GetLogicalDrivesInfo();
+        }
+
+
+        #region Методы
+
+        #region GetLogicalDrivesInfo
+
+        public string GetLogicalDrivesInfo()
+        {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
                 _PathToItem = logicalDrive;
@@ -158,6 +132,57 @@ namespace FileManager.ViewModels
                     ItemPath = logicalDrive
                 });
             }
+
+            return _PathToItem;
         }
+
+        #endregion
+
+        #region GetItemsInfoFromPath
+
+        public void GetItemsInfoFromPath()
+        {
+            try
+            {
+                ItemsInfo.Clear();
+
+                Dir = new DirectoryInfo(_PathToItem);
+
+                _Dirs = Dir.GetDirectories();
+                _Files = Dir.GetFiles();
+                _PathToItem = Dir.FullName;
+                Dir = new DirectoryInfo(_PathToItem);
+
+                foreach (DirectoryInfo currentDir in _Dirs)
+                {
+                    _ItemsInfo.Add(new Item
+                    {
+                        ItemName = currentDir.Name,
+                        ItemType = "Папка с файлами",
+                        ItemDateChanged = currentDir.LastWriteTime,
+                        ItemSize = 0,
+                        ItemPath = currentDir.FullName
+                    });
+                }
+                foreach (FileInfo currentFile in _Files)
+                {
+                    _ItemsInfo.Add(new Item
+                    {
+                        ItemName = currentFile.Name,
+                        ItemType = currentFile.Extension.ToString(),
+                        ItemDateChanged = currentFile.LastWriteTime,
+                        ItemSize = currentFile.Length
+                    });
+                }
+            }
+            catch (DirectoryNotFoundException)
+            {
+                MessageBox.Show("Путь не найден!", "Файловый менеджер");
+            }
+        }
+
+        #endregion
+
+        #endregion
     }
 }
