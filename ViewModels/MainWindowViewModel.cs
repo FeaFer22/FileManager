@@ -121,10 +121,9 @@ namespace FileManager.ViewModels
                 _ItemsInfo.Add(new Item
                 {
                     ItemName = currentFile.Name,
-                    ItemType = currentFile.Extension,
+                    ItemType = currentFile.Extension.ToString(),
                     ItemDateChanged = currentFile.LastWriteTime,
-                    ItemSize = currentFile.Length / 1024 / 1024 / 1024,
-                    ItemPath = currentFile.FullName
+                    ItemSize = currentFile.Length
                 });
             }
         }
