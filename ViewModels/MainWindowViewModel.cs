@@ -91,7 +91,6 @@ namespace FileManager.ViewModels
 
         private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
-            _itemsInfo.Clear();
             GetItemsInfoFromPath();
         }
 
@@ -114,7 +113,7 @@ namespace FileManager.ViewModels
 
             _itemsInfo = new ObservableCollection<Item>();
 
-            GetLogicalDrivesInfo();
+            GetLogicalDrivesInfo(_pathToItem);
         }
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -122,11 +121,11 @@ namespace FileManager.ViewModels
 
         #region GetLogicalDrivesInfo
 
-        public string GetLogicalDrivesInfo()
+        public string GetLogicalDrivesInfo(string path)
         {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
-                _pathToItem = logicalDrive;
+                path = logicalDrive;
                 _itemsInfo.Add(new Item
                 {
                     itemName = logicalDrive,
@@ -136,7 +135,7 @@ namespace FileManager.ViewModels
                 });
             }
 
-            return _pathToItem;
+            return path;
         }
 
         #endregion
@@ -145,17 +144,18 @@ namespace FileManager.ViewModels
 
         public void GetItemsInfoFromPath()
         {
+            _itemsInfo.Clear();
             try
             {
                 dir = new DirectoryInfo(_pathToItem);
 
                 _dirs = dir.GetDirectories();
                 _files = dir.GetFiles();
-                _pathToItem = dir.FullName;
+
 
                 foreach (DirectoryInfo currentDir in _dirs)
                 {
-
+                    _pathToItem = currentDir.FullName;
                     _itemsInfo.Add(new Item
                     {
                         itemName = currentDir.Name,
@@ -181,10 +181,14 @@ namespace FileManager.ViewModels
             {
                 MessageBox.Show(directoryNotFound.Message, _title);
             }
-
+            catch (ArgumentException argumentNull)
+            {
+                GetLogicalDrivesInfo(_pathToItem);
+            }
         }
 
         #endregion
+
 
         #endregion
         /*---------------------------------------------------------------------------------------------------------------*/
