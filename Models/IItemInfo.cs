@@ -7,7 +7,7 @@ namespace FileManager.Models
     {
         public string itemName { get; set; }
         public DateTime itemDateChanged { get; set; }
-        public long itemSize { get; set; }
+        public string itemSize { get; set; }
         public string itemType { get; set; }
         public string itemPath { get; set; }
     }

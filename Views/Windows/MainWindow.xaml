@@ -23,9 +23,8 @@
             </MenuItem>
         </Menu>
         <Grid>
-            <fa:ImageAwesome Icon="Solid_ArrowLeft" Width="20" Height="15" Margin="10,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.48,1.072"/>
-            <fa:ImageAwesome Icon="Solid_ArrowRight" Width="20" Height="15" Margin="40,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.507,1.205"/>
-            <TextBox Margin="70,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+            <fa:ImageAwesome Icon="Solid_ArrowLeft" Width="20" Height="16" Margin="10,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.48,1.072"/>
+            <TextBox Margin="40,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                 <TextBox.InputBindings>
                     <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand}" Gesture="Enter"/>
                 </TextBox.InputBindings>
@@ -45,7 +44,7 @@
 
                 <!--<b:Interaction.Triggers>
                     <b:EventTrigger EventName="MouseDoubleClick">
-                        <b:InvokeCommandAction Command="{Binding OpenSelectedItemCommand}">
+                        <b:InvokeCommandAction Command="{Binding OpenSelectedItemCommand, UpdateSourceTrigger=PropertyChanged}">
                         </b:InvokeCommandAction>
                     </b:EventTrigger>
                 </b:Interaction.Triggers>-->

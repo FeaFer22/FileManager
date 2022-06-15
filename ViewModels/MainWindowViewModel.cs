@@ -18,9 +18,8 @@ namespace FileManager.ViewModels
         private DirectoryInfo dir;
         private DirectoryInfo[] _dirs;
         private FileInfo[] _files;
-        private ObservableCollection<Item> _itemsInfo;
+        private ObservableCollection<Item> _itemsInfo = new ObservableCollection<Item>();
 
-        private double catalogSize = 0;
 
         #region Заголовок окна
 
@@ -91,7 +90,6 @@ namespace FileManager.ViewModels
 
         private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
-            _itemsInfo.Clear();
             GetItemsInfoFromPath();
         }
 
@@ -112,9 +110,7 @@ namespace FileManager.ViewModels
 
             #endregion
 
-            _itemsInfo = new ObservableCollection<Item>();
-
-            GetLogicalDrivesInfo();
+            GetLogicalDrivesInfo(_pathToItem);
         }
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -122,11 +118,11 @@ namespace FileManager.ViewModels
 
         #region GetLogicalDrivesInfo
 
-        public string GetLogicalDrivesInfo()
+        public string GetLogicalDrivesInfo(string path)
         {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
-                _pathToItem = logicalDrive;
+                path = logicalDrive;
                 _itemsInfo.Add(new Item
                 {
                     itemName = logicalDrive,
@@ -136,7 +132,7 @@ namespace FileManager.ViewModels
                 });
             }
 
-            return _pathToItem;
+            return path;
         }
 
         #endregion
@@ -145,26 +141,12 @@ namespace FileManager.ViewModels
 
         public void GetItemsInfoFromPath()
         {
+            _itemsInfo.Clear();
             try
             {
                 dir = new DirectoryInfo(_pathToItem);
-
                 _dirs = dir.GetDirectories();
                 _files = dir.GetFiles();
-                _pathToItem = dir.FullName;
-
-                foreach (DirectoryInfo currentDir in _dirs)
-                {
-
-                    _itemsInfo.Add(new Item
-                    {
-                        itemName = currentDir.Name,
-                        itemType = "Папка с файлами",
-                        itemDateChanged = currentDir.LastWriteTime,
-                        itemSize = 0,
-                        itemPath = currentDir.FullName
-                    });
-                }
 
                 foreach (FileInfo currentFile in _files)
                 {
@@ -173,15 +155,31 @@ namespace FileManager.ViewModels
                         itemName = currentFile.Name,
                         itemType = currentFile.Extension,
                         itemDateChanged = currentFile.LastWriteTime,
-                        itemSize = currentFile.Length
+                        itemSize = currentFile.Length.ToString()
+                    });
+                }
+
+                foreach (DirectoryInfo currentDir in _dirs)
+                {
+                    _itemsInfo.Add(new Item
+                    {
+                        itemName = currentDir.Name,
+                        itemType = "Папка с файлами",
+                        itemDateChanged = currentDir.LastWriteTime,
+                        itemSize = " ",
+                        itemPath = currentDir.FullName
                     });
                 }
             }
             catch (DirectoryNotFoundException directoryNotFound)
             {
                 MessageBox.Show(directoryNotFound.Message, _title);
+                GetLogicalDrivesInfo(_pathToItem);
             }
-
+            catch (ArgumentException argumentNull)
+            {
+                GetLogicalDrivesInfo(_pathToItem);
+            }
         }
 
         #endregion
