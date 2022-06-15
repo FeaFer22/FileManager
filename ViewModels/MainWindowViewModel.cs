@@ -3,6 +3,8 @@ using FileManager.Infrastructure.Commands;
 using FileManager.Models;
 using FileManager.ViewModels.Base;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
@@ -145,6 +147,7 @@ namespace FileManager.ViewModels
         {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
+                _pathToItem = logicalDrive;
                 _itemsInfo.Add(new Item
                 {
                     itemName = logicalDrive,
@@ -218,6 +221,21 @@ namespace FileManager.ViewModels
             {
                 _pathToItem = item.itemPath;
                 GetItemsInfoFromPath(_pathToItem);
+                try
+                {
+                    if (item.itemType != "Папка с файлами" && item.itemType != "Локальный диск")
+                    {
+                        Process.Start(new ProcessStartInfo(_pathToItem + "\\" + item.itemName) {UseShellExecute = true});
+                    }
+                    else
+                    {
+                        OpenSelectedItem(SelectedItem);
+                    }
+                }
+                catch (Win32Exception)
+                {
+                    MessageBox.Show("Bruh");
+                }
             }
         }
 
