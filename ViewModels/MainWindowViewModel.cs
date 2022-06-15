@@ -18,8 +18,6 @@ namespace FileManager.ViewModels
         private DirectoryInfo dir;
         private DirectoryInfo[] _dirs;
         private FileInfo[] _files;
-        private ObservableCollection<Item> _itemsInfo = new ObservableCollection<Item>();
-
 
         #region Заголовок окна
 
@@ -57,6 +55,8 @@ namespace FileManager.ViewModels
         #region Получение информации о объекте
 
         ///<summary>Получение информации о объекте</summary>
+
+        private ObservableCollection<Item> _itemsInfo = new ObservableCollection<Item>();
         public ObservableCollection<Item> ItemsInfo
         {
             get => _itemsInfo;
@@ -67,6 +67,14 @@ namespace FileManager.ViewModels
         }
 
         #endregion
+
+        #region Получение выделенного объекта datagrid
+
+        ///<summary>Получение выделенного объекта datagrid</summary>
+        public Item SelectedItem { get; set; }
+
+        #endregion
+
 
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -90,9 +98,22 @@ namespace FileManager.ViewModels
 
         private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
-            GetItemsInfoFromPath();
+            GetItemsInfoFromPath(_pathToItem);
         }
 
+
+        #endregion
+
+        #region OpenSelectedItemCommand
+
+        public ICommand OpenSelectedItemCommand { get; }
+
+        private bool CanOpenSelectedItemCommandExecute(object obj) => true;
+
+        private void OnOpenSelectedItemCommandExecuted(object obj)
+        {
+            OpenSelectedItem(SelectedItem);
+        }
 
         #endregion
 
@@ -108,9 +129,11 @@ namespace FileManager.ViewModels
 
             UpdateItemsInfoFromPathCommand = new ActionCommand(OnUpdateItemsInfoFromPathCommandExecuted, CanUpdateItemsInfoFromPathCommandExecute);
 
+            OpenSelectedItemCommand = new ActionCommand(OnOpenSelectedItemCommandExecuted, CanOpenSelectedItemCommandExecute);
+
             #endregion
 
-            GetLogicalDrivesInfo(_pathToItem);
+            GetLogicalDrivesInfo();
         }
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -118,33 +141,30 @@ namespace FileManager.ViewModels
 
         #region GetLogicalDrivesInfo
 
-        public string GetLogicalDrivesInfo(string path)
+        public void GetLogicalDrivesInfo()
         {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
-                path = logicalDrive;
                 _itemsInfo.Add(new Item
                 {
                     itemName = logicalDrive,
                     itemType = "Локальный диск",
-                    itemDateChanged = DateTime.Now,
+                    itemDateChanged = DateTime.Today,
                     itemPath = logicalDrive
                 });
             }
-
-            return path;
         }
 
         #endregion
 
         #region GetItemsInfoFromPath
 
-        public void GetItemsInfoFromPath()
+        public void GetItemsInfoFromPath(string path)
         {
             _itemsInfo.Clear();
             try
             {
-                dir = new DirectoryInfo(_pathToItem);
+                dir = new DirectoryInfo(path);
                 _dirs = dir.GetDirectories();
                 _files = dir.GetFiles();
 
@@ -155,7 +175,8 @@ namespace FileManager.ViewModels
                         itemName = currentFile.Name,
                         itemType = currentFile.Extension,
                         itemDateChanged = currentFile.LastWriteTime,
-                        itemSize = currentFile.Length.ToString()
+                        itemSize = currentFile.Length.ToString(),
+                        itemPath = currentFile.DirectoryName
                     });
                 }
 
@@ -174,11 +195,29 @@ namespace FileManager.ViewModels
             catch (DirectoryNotFoundException directoryNotFound)
             {
                 MessageBox.Show(directoryNotFound.Message, _title);
-                GetLogicalDrivesInfo(_pathToItem);
+                GetLogicalDrivesInfo();
             }
             catch (ArgumentException argumentNull)
             {
-                GetLogicalDrivesInfo(_pathToItem);
+                GetLogicalDrivesInfo();
+            }
+            catch (UnauthorizedAccessException unauthorizedAccess)
+            {
+                MessageBox.Show(unauthorizedAccess.Message, _title);
+                GetLogicalDrivesInfo();
+            }
+        }
+
+        #endregion
+
+        #region OpenSelectedItem
+
+        private void OpenSelectedItem(object parameter)
+        {
+            if (parameter is Item item)
+            {
+                _pathToItem = item.itemPath;
+                GetItemsInfoFromPath(_pathToItem);
             }
         }
 
