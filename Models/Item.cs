@@ -4,10 +4,10 @@ namespace FileManager.Models
 {
     internal class Item : IItemInfo
     {
-        public string ItemName { get; set; }
-        public DateTime ItemDateChanged { get; set; }
-        public long ItemSize { get; set; }
-        public string ItemType { get; set; }
-        public string ItemPath { get; set; }
+        public string itemName { get; set; }
+        public DateTime itemDateChanged { get; set; }
+        public long itemSize { get; set; }
+        public string itemType { get; set; }
+        public string itemPath { get; set; }
     }
 }

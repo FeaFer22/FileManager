@@ -51,10 +51,10 @@
                 </b:Interaction.Triggers>-->
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Имя" Binding="{Binding ItemName}"/>
-                    <DataGridTextColumn Header="Дата изменения" Binding="{Binding ItemDateChanged}" />
-                    <DataGridTextColumn Header="Тип" Binding="{Binding ItemType}"/>
-                    <DataGridTextColumn Header="Размер" Binding="{Binding ItemSize}"/>
+                    <DataGridTextColumn Header="Имя" Binding="{Binding itemName}"/>
+                    <DataGridTextColumn Header="Дата изменения" Binding="{Binding itemDateChanged}" />
+                    <DataGridTextColumn Header="Тип" Binding="{Binding itemType}"/>
+                    <DataGridTextColumn Header="Размер" Binding="{Binding itemSize}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

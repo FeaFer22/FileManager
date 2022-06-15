@@ -15,23 +15,25 @@ namespace FileManager.ViewModels
     {
         /*---------------------------------------------------------------------------------------------------------------*/
 
-        private DirectoryInfo Dir;
-        private DirectoryInfo[] _Dirs;
-        private FileInfo[] _Files;
-        private ObservableCollection<Item> _ItemsInfo;
+        private DirectoryInfo dir;
+        private DirectoryInfo[] _dirs;
+        private FileInfo[] _files;
+        private ObservableCollection<Item> _itemsInfo;
+
+        private double catalogSize = 0;
 
         #region Заголовок окна
 
-        private string _Title = "Файловый менеджер";
+        private string _title = "Файловый менеджер";
         ///<summary>
         ///Заголовок окна
         ///</summary>
         public string Title
         {
-            get => _Title;
+            get => _title;
             set
             {
-                Set(ref _Title, value);
+                Set(ref _title, value);
             }
         }
 
@@ -41,13 +43,13 @@ namespace FileManager.ViewModels
 
         ///<summary>Путь к объекту</summary>
 
-        private string _PathToItem;
+        private string _pathToItem;
         public string PathToItem
         {
-            get => _PathToItem;
+            get => _pathToItem;
             set
             {
-                Set(ref _PathToItem, value);
+                Set(ref _pathToItem, value);
             }
         }
 
@@ -58,10 +60,10 @@ namespace FileManager.ViewModels
         ///<summary>Получение информации о объекте</summary>
         public ObservableCollection<Item> ItemsInfo
         {
-            get => _ItemsInfo;
+            get => _itemsInfo;
             set
             {
-                Set(ref _ItemsInfo, value);
+                Set(ref _itemsInfo, value);
             }
         }
 
@@ -89,6 +91,7 @@ namespace FileManager.ViewModels
 
         private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
+            _itemsInfo.Clear();
             GetItemsInfoFromPath();
         }
 
@@ -109,11 +112,11 @@ namespace FileManager.ViewModels
 
             #endregion
 
-            _ItemsInfo = new ObservableCollection<Item>();
+            _itemsInfo = new ObservableCollection<Item>();
 
             GetLogicalDrivesInfo();
         }
-
+        /*---------------------------------------------------------------------------------------------------------------*/
 
         #region Методы
 
@@ -123,17 +126,17 @@ namespace FileManager.ViewModels
         {
             foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
-                _PathToItem = logicalDrive;
-                _ItemsInfo.Add(new Item
+                _pathToItem = logicalDrive;
+                _itemsInfo.Add(new Item
                 {
-                    ItemName = logicalDrive,
-                    ItemType = "Локальный диск",
-                    ItemDateChanged = DateTime.Now,
-                    ItemPath = logicalDrive
+                    itemName = logicalDrive,
+                    itemType = "Локальный диск",
+                    itemDateChanged = DateTime.Now,
+                    itemPath = logicalDrive
                 });
             }
 
-            return _PathToItem;
+            return _pathToItem;
         }
 
         #endregion
@@ -144,45 +147,46 @@ namespace FileManager.ViewModels
         {
             try
             {
-                ItemsInfo.Clear();
+                dir = new DirectoryInfo(_pathToItem);
 
-                Dir = new DirectoryInfo(_PathToItem);
+                _dirs = dir.GetDirectories();
+                _files = dir.GetFiles();
+                _pathToItem = dir.FullName;
 
-                _Dirs = Dir.GetDirectories();
-                _Files = Dir.GetFiles();
-                _PathToItem = Dir.FullName;
-                Dir = new DirectoryInfo(_PathToItem);
-
-                foreach (DirectoryInfo currentDir in _Dirs)
+                foreach (DirectoryInfo currentDir in _dirs)
                 {
-                    _ItemsInfo.Add(new Item
+
+                    _itemsInfo.Add(new Item
                     {
-                        ItemName = currentDir.Name,
-                        ItemType = "Папка с файлами",
-                        ItemDateChanged = currentDir.LastWriteTime,
-                        ItemSize = 0,
-                        ItemPath = currentDir.FullName
+                        itemName = currentDir.Name,
+                        itemType = "Папка с файлами",
+                        itemDateChanged = currentDir.LastWriteTime,
+                        itemSize = 0,
+                        itemPath = currentDir.FullName
                     });
                 }
-                foreach (FileInfo currentFile in _Files)
+
+                foreach (FileInfo currentFile in _files)
                 {
-                    _ItemsInfo.Add(new Item
+                    _itemsInfo.Add(new Item
                     {
-                        ItemName = currentFile.Name,
-                        ItemType = currentFile.Extension.ToString(),
-                        ItemDateChanged = currentFile.LastWriteTime,
-                        ItemSize = currentFile.Length
+                        itemName = currentFile.Name,
+                        itemType = currentFile.Extension,
+                        itemDateChanged = currentFile.LastWriteTime,
+                        itemSize = currentFile.Length
                     });
                 }
             }
-            catch (DirectoryNotFoundException)
+            catch (DirectoryNotFoundException directoryNotFound)
             {
-                MessageBox.Show("Путь не найден!", "Файловый менеджер");
+                MessageBox.Show(directoryNotFound.Message, _title);
             }
+
         }
 
         #endregion
 
         #endregion
+        /*---------------------------------------------------------------------------------------------------------------*/
     }
 }
