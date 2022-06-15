@@ -26,7 +26,7 @@
             <fa:ImageAwesome Icon="Solid_ArrowLeft" Width="20" Height="16" Margin="10,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.48,1.072"/>
             <TextBox Margin="40,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                 <TextBox.InputBindings>
-                    <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand}" CommandParameter="{Binding PathToItem, Mode=TwoWay}" Gesture="Enter"/>
+                    <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand, UpdateSourceTrigger=PropertyChanged}" Gesture="Enter"/>
                 </TextBox.InputBindings>
             </TextBox>
             <DataGrid 

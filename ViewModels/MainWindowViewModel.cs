@@ -3,7 +3,8 @@ using FileManager.Infrastructure.Commands;
 using FileManager.Models;
 using FileManager.ViewModels.Base;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -161,9 +162,9 @@ namespace FileManager.ViewModels
 
         public void GetItemsInfoFromPath(string path)
         {
-            _itemsInfo.Clear();
             try
             {
+                _itemsInfo.Clear();
                 dir = new DirectoryInfo(path);
                 _dirs = dir.GetDirectories();
                 _files = dir.GetFiles();
@@ -197,7 +198,11 @@ namespace FileManager.ViewModels
                 MessageBox.Show(directoryNotFound.Message, _title);
                 GetLogicalDrivesInfo();
             }
-            catch (ArgumentException argumentNull)
+            catch (IOException ioException)
+            {
+                MessageBox.Show(ioException.Message + "(IOException)", _title);
+            }
+            catch (ArgumentException)
             {
                 GetLogicalDrivesInfo();
             }
@@ -216,8 +221,25 @@ namespace FileManager.ViewModels
         {
             if (parameter is Item item)
             {
-                _pathToItem = item.itemPath;
-                GetItemsInfoFromPath(_pathToItem);
+                try
+                {
+                    _pathToItem = item.itemPath;
+                    GetItemsInfoFromPath(_pathToItem);
+
+                    if (item.itemType != "Папка с файлами" && item.itemType != "Локальный диск")
+                    {
+                        _pathToItem = _pathToItem + "\\" + item.itemName;
+                        Process.Start(new ProcessStartInfo(_pathToItem) {UseShellExecute = true});
+                    }
+                    else
+                    {
+                        OpenSelectedItem(SelectedItem);
+                    }
+                }
+                catch (Win32Exception exception)
+                {
+                    MessageBox.Show(exception.Message, _title);
+                }
             }
         }
 
