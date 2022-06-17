@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 
 namespace FileManager.Models
 {
-    internal class Item : IItemInfo
+    public class Item : IItemInfo
     {
         public string itemName { get; set; }
         public DateTime itemDateChanged { get; set; }

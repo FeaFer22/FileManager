@@ -14,7 +14,7 @@ using FileManager.Infrastructure.Commands.Base;
 
 namespace FileManager.ViewModels
 {
-    internal class MainWindowViewModel : ViewModel
+    public class MainWindowViewModel : ViewModel
     {
         /*---------------------------------------------------------------------------------------------------------------*/
 
