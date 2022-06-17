@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using FileManager.Interfaces;
 
 namespace FileManager.Models
 {
-    internal class Item : IItemInfo
+    public class Item : IItemInfo
     {
         public string itemName { get; set; }
         public DateTime itemDateChanged { get; set; }

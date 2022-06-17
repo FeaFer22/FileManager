@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.IO.Packaging;
 
-namespace FileManager.Models
+namespace FileManager.Interfaces
 {
     internal interface IItemInfo
     {
