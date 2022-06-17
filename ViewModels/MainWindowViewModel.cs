@@ -8,7 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
+using FileManager.Infrastructure.Commands.Base;
 
 namespace FileManager.ViewModels
 {
@@ -19,6 +21,10 @@ namespace FileManager.ViewModels
         private DirectoryInfo dir;
         private DirectoryInfo[] _dirs;
         private FileInfo[] _files;
+
+        private long catalogSize;
+
+        private object _itemsLock;
 
         #region Заголовок окна
 
@@ -42,9 +48,10 @@ namespace FileManager.ViewModels
         ///<summary>Путь к объекту</summary>
 
         private string _pathToItem;
+
         public string PathToItem
         {
-            get => _pathToItem;
+            get =>_pathToItem;
             set
             {
                 Set(ref _pathToItem, value);
@@ -57,7 +64,7 @@ namespace FileManager.ViewModels
 
         ///<summary>Получение информации о объекте</summary>
 
-        private ObservableCollection<Item> _itemsInfo = new ObservableCollection<Item>();
+        private ObservableCollection<Item> _itemsInfo;
         public ObservableCollection<Item> ItemsInfo
         {
             get => _itemsInfo;
@@ -66,6 +73,20 @@ namespace FileManager.ViewModels
                 Set(ref _itemsInfo, value);
             }
         }
+
+        #endregion
+
+        #region Размер предмета
+
+        //private ObservableCollection<string> _itemSize;
+        //public ObservableCollection<string> itemSize
+        //{
+        //    get => _itemSize;
+        //    set
+        //    {
+        //        Set(ref _itemSize, value);
+        //    }
+        //}
 
         #endregion
 
@@ -95,9 +116,9 @@ namespace FileManager.ViewModels
 
         public ICommand UpdateItemsInfoFromPathCommand { get; }
 
-        private bool CanUpdateItemsInfoFromPathCommandExecute(object obj) => true;
+        public bool CanUpdateItemsInfoFromPathCommandExecute(object parameter) => true;
 
-        private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
+        public void OnUpdateItemsInfoFromPathCommandExecuted(object parameter)
         {
             GetItemsInfoFromPath(_pathToItem);
         }
@@ -109,11 +130,24 @@ namespace FileManager.ViewModels
 
         public ICommand OpenSelectedItemCommand { get; }
 
-        private bool CanOpenSelectedItemCommandExecute(object obj) => true;
+        private bool CanOpenSelectedItemCommandExecute(object parameter) => true;
 
-        private void OnOpenSelectedItemCommandExecuted(object obj)
+        private void OnOpenSelectedItemCommandExecuted(object parameter)
         {
             OpenSelectedItem(SelectedItem);
+        }
+
+        #endregion
+
+        #region PathBackCommand
+
+        public ICommand PathBackCommand { get; }
+
+        private bool CanPathBackCommandExecute(object parameter) => true;
+
+        private void OnPathBackCommandExecuted(object parameter)
+        {
+            PathBack();
         }
 
         #endregion
@@ -132,9 +166,19 @@ namespace FileManager.ViewModels
 
             OpenSelectedItemCommand = new ActionCommand(OnOpenSelectedItemCommandExecuted, CanOpenSelectedItemCommandExecute);
 
+            PathBackCommand = new ActionCommand(OnPathBackCommandExecuted, CanPathBackCommandExecute);
+
             #endregion
 
+
+            _itemsLock = new object();
+
+            _itemsInfo = new ObservableCollection<Item>();
+
+            BindingOperations.EnableCollectionSynchronization(_itemsInfo, _itemsLock);
+
             GetLogicalDrivesInfo();
+
         }
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -144,15 +188,19 @@ namespace FileManager.ViewModels
 
         public void GetLogicalDrivesInfo()
         {
-            foreach (var logicalDrive in Directory.GetLogicalDrives())
+            lock (_itemsLock)
             {
-                _itemsInfo.Add(new Item
+                foreach (var logicalDrive in Directory.GetLogicalDrives())
                 {
-                    itemName = logicalDrive,
-                    itemType = "Локальный диск",
-                    itemDateChanged = DateTime.Today,
-                    itemPath = logicalDrive
-                });
+                    Item item = new Item
+                    {
+                        itemName = logicalDrive,
+                        itemType = "Локальный диск",
+                        itemDateChanged = DateTime.Today,
+                        itemPath = logicalDrive
+                    };
+                    _itemsInfo.Add(item);
+                }
             }
         }
 
@@ -166,32 +214,8 @@ namespace FileManager.ViewModels
             {
                 _itemsInfo.Clear();
                 dir = new DirectoryInfo(path);
-                _dirs = dir.GetDirectories();
-                _files = dir.GetFiles();
-
-                foreach (FileInfo currentFile in _files)
-                {
-                    _itemsInfo.Add(new Item
-                    {
-                        itemName = currentFile.Name,
-                        itemType = currentFile.Extension,
-                        itemDateChanged = currentFile.LastWriteTime,
-                        itemSize = currentFile.Length.ToString(),
-                        itemPath = currentFile.DirectoryName
-                    });
-                }
-
-                foreach (DirectoryInfo currentDir in _dirs)
-                {
-                    _itemsInfo.Add(new Item
-                    {
-                        itemName = currentDir.Name,
-                        itemType = "Папка с файлами",
-                        itemDateChanged = currentDir.LastWriteTime,
-                        itemSize = " ",
-                        itemPath = currentDir.FullName
-                    });
-                }
+                SetDirs(dir);
+                SetFiles(dir);
             }
             catch (DirectoryNotFoundException directoryNotFound)
             {
@@ -209,8 +233,40 @@ namespace FileManager.ViewModels
             catch (UnauthorizedAccessException unauthorizedAccess)
             {
                 MessageBox.Show(unauthorizedAccess.Message, _title);
-                GetLogicalDrivesInfo();
+                PathBack();
             }
+        }
+
+        #endregion
+
+        #region GetDirSize
+
+        public long GetDirSize(string path)
+        {
+            try
+            {
+                catalogSize = 0;
+                dir = new DirectoryInfo(path);
+                _dirs = dir.GetDirectories();
+                _files = dir.GetFiles();
+
+                foreach (FileInfo currentFile in _files)
+                {
+                    catalogSize = catalogSize + currentFile.Length;
+                }
+
+                foreach (DirectoryInfo currentDir in _dirs)
+                {
+                    catalogSize = catalogSize + GetDirSize(currentDir.FullName);
+                }
+
+            }
+            catch (UnauthorizedAccessException)
+            {
+                
+            }
+
+            return catalogSize;
         }
 
         #endregion
@@ -245,6 +301,176 @@ namespace FileManager.ViewModels
 
         #endregion
 
+        #region PathBack
+
+        public void PathBack()
+        {
+            try
+            {
+                if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
+                {
+                    _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                    while (_pathToItem[_pathToItem.Length - 1] == '\\')
+                    {
+                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 2, 1);
+                    }
+                }
+                else if (_pathToItem[_pathToItem.Length - 1] != '\\')
+                {
+                    while (_pathToItem[_pathToItem.Length - 1] != '\\')
+                    {
+                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                    }
+
+                    if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
+                    {
+                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                    }
+                    else
+                    {
+                        GetLogicalDrivesInfo();
+                    }
+                }
+                GetItemsInfoFromPath(_pathToItem);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                GetLogicalDrivesInfo();
+            }
+        }
+
+        #endregion
+
+        #region SetSize
+        public async void SetSize(Item item)
+        {
+            await Task.Run(() =>
+            {
+                item.itemSize[0] = Size(GetDirSize(_pathToItem));
+            });
+        }
+
+        #endregion
+
+        #region Size
+
+        public string Size(long catalogSize)
+        {
+            if (catalogSize < 1024.0)
+            {
+                return catalogSize.ToString() + " б";
+            }
+            else if ((catalogSize / 1024) < 1024)
+            {
+                return (catalogSize / 1024).ToString() + " Кб";
+            }
+            else if ((catalogSize / 1024 / 1024) < 1024)
+            {
+                return (catalogSize / 1024 / 1024).ToString() + " Мб";
+            }
+            else if ((catalogSize / 1024 / 1024 / 1024) < 1024)
+            {
+                return (catalogSize / 1024 / 1024 / 1024).ToString() + " Гб";
+            }
+            else
+            {
+                return (catalogSize / 1024 / 1024 / 1024 / 1024).ToString() + " Тб";
+            }
+        }
+
+        #endregion
+
+        #region SetDirs
+
+        public async void SetDirs(DirectoryInfo dir)
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    _dirs = dir.GetDirectories();
+
+                    lock (_itemsLock)
+                    {
+                        foreach (DirectoryInfo currentDir in _dirs)
+                        {
+                            var itemSizee = new ObservableCollection<string>();
+
+                            //await Task.Delay(10);
+
+                            itemSizee.Add("...");
+
+
+                            // Once locked, you can manipulate the collection safely from another thread
+
+                            Item item = new Item
+                            {
+                                itemName = currentDir.Name,
+                                itemType = "Папка с файлами",
+                                itemDateChanged = currentDir.LastWriteTime,
+                                itemSize = itemSizee,
+                                itemPath = currentDir.FullName
+                            };
+
+
+                            _itemsInfo.Add(item);
+                        }
+
+                        foreach (var item in _itemsInfo)
+                        {
+                            //await Task.Delay(10);
+
+                            if (item.itemType == "Папка с файлами")
+                            {
+                                SetSize(item);
+                            }
+                        }
+                    }
+                });
+            }
+            catch (InvalidOperationException)
+            {
+
+            }
+        }
+
+        #endregion
+
+        #region SetFiles
+
+        public async void SetFiles(DirectoryInfo dir)
+        {
+            await Task.Run(() =>
+            {
+                _files = dir.GetFiles();
+                lock (_itemsLock)
+                {
+                    foreach (FileInfo currentFile in _files)
+                    {
+                        var itemSizee = new ObservableCollection<string>();
+
+                        //await Task.Delay(10);
+
+                        itemSizee.Add(Size(currentFile.Length));
+
+
+
+                        Item item = new Item
+                        {
+                            itemName = currentFile.Name,
+                            itemType = currentFile.Extension,
+                            itemDateChanged = currentFile.LastWriteTime,
+                            itemSize = itemSizee,
+                            itemPath = currentFile.DirectoryName
+
+                        };
+                        _itemsInfo.Add(item);
+                    }
+                }
+            });
+        }
+
+        #endregion
 
         #endregion
         /*---------------------------------------------------------------------------------------------------------------*/
