@@ -6,15 +6,17 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using FileManager.Infrastructure.Commands.Base;
+using ThreadState = System.Threading.ThreadState;
 
 namespace FileManager.ViewModels
 {
-    public class MainWindowViewModel : ViewModel
+    class MainWindowViewModel : ViewModel
     {
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -48,10 +50,9 @@ namespace FileManager.ViewModels
         ///<summary>Путь к объекту</summary>
 
         private string _pathToItem;
-
         public string PathToItem
         {
-            get =>_pathToItem;
+            get => _pathToItem;
             set
             {
                 Set(ref _pathToItem, value);
@@ -64,7 +65,7 @@ namespace FileManager.ViewModels
 
         ///<summary>Получение информации о объекте</summary>
 
-        private ObservableCollection<Item> _itemsInfo;
+        private ObservableCollection<Item> _itemsInfo = new ObservableCollection<Item>();
         public ObservableCollection<Item> ItemsInfo
         {
             get => _itemsInfo;
@@ -76,20 +77,6 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        #region Размер предмета
-
-        //private ObservableCollection<string> _itemSize;
-        //public ObservableCollection<string> itemSize
-        //{
-        //    get => _itemSize;
-        //    set
-        //    {
-        //        Set(ref _itemSize, value);
-        //    }
-        //}
-
-        #endregion
-
         #region Получение выделенного объекта datagrid
 
         ///<summary>Получение выделенного объекта datagrid</summary>
@@ -97,6 +84,20 @@ namespace FileManager.ViewModels
 
         #endregion
 
+        #region IsDataGridEnabled
+
+        private bool _isDataGridEnabled = true;
+
+        public bool IsDataGridEnabled
+        {
+            get => _isDataGridEnabled;
+            set
+            {
+                Set(ref _isDataGridEnabled, value);
+            }
+        }
+
+        #endregion
 
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -116,9 +117,12 @@ namespace FileManager.ViewModels
 
         public ICommand UpdateItemsInfoFromPathCommand { get; }
 
-        public bool CanUpdateItemsInfoFromPathCommandExecute(object parameter) => true;
+        private bool CanUpdateItemsInfoFromPathCommandExecute(object obj)
+        {
+            return true;
+        }
 
-        public void OnUpdateItemsInfoFromPathCommandExecuted(object parameter)
+        private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
             GetItemsInfoFromPath(_pathToItem);
         }
@@ -130,9 +134,12 @@ namespace FileManager.ViewModels
 
         public ICommand OpenSelectedItemCommand { get; }
 
-        private bool CanOpenSelectedItemCommandExecute(object parameter) => true;
+        private bool CanOpenSelectedItemCommandExecute(object obj)
+        {
+            return true;
+        }
 
-        private void OnOpenSelectedItemCommandExecuted(object parameter)
+        private void OnOpenSelectedItemCommandExecuted(object obj)
         {
             OpenSelectedItem(SelectedItem);
         }
@@ -143,9 +150,9 @@ namespace FileManager.ViewModels
 
         public ICommand PathBackCommand { get; }
 
-        private bool CanPathBackCommandExecute(object parameter) => true;
+        private bool CanPathBackCommandExecute(object obj) => true;
 
-        private void OnPathBackCommandExecuted(object parameter)
+        private void OnPathBackCommandExecuted(object obj)
         {
             PathBack();
         }
@@ -170,15 +177,13 @@ namespace FileManager.ViewModels
 
             #endregion
 
-
             _itemsLock = new object();
 
             _itemsInfo = new ObservableCollection<Item>();
 
             BindingOperations.EnableCollectionSynchronization(_itemsInfo, _itemsLock);
-
+            
             GetLogicalDrivesInfo();
-
         }
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -188,19 +193,17 @@ namespace FileManager.ViewModels
 
         public void GetLogicalDrivesInfo()
         {
-            lock (_itemsLock)
+            Item item;
+            foreach (var logicalDrive in Directory.GetLogicalDrives())
             {
-                foreach (var logicalDrive in Directory.GetLogicalDrives())
+                item = new Item
                 {
-                    Item item = new Item
-                    {
-                        itemName = logicalDrive,
-                        itemType = "Локальный диск",
-                        itemDateChanged = DateTime.Today,
-                        itemPath = logicalDrive
-                    };
-                    _itemsInfo.Add(item);
-                }
+                    itemName = logicalDrive,
+                    itemType = "Локальный диск",
+                    itemDateChanged = DateTime.Today,
+                    itemPath = logicalDrive
+                };
+                _itemsInfo.Add(item);
             }
         }
 
@@ -210,12 +213,77 @@ namespace FileManager.ViewModels
 
         public void GetItemsInfoFromPath(string path)
         {
+            Thread thread;
             try
             {
                 _itemsInfo.Clear();
                 dir = new DirectoryInfo(path);
-                SetDirs(dir);
-                SetFiles(dir);
+                _dirs = dir.GetDirectories();
+                _files = dir.GetFiles();
+
+                thread = new Thread(() =>
+                {
+                    long currentSizeOfDir;
+                    string currentSizeOfDirStr;
+
+                    Item item, itemActualSize;
+
+                    lock (_itemsLock)
+                    {
+                        foreach (FileInfo currentFile in _files)
+                        {
+                            item = new Item()
+                            {
+                                itemName = currentFile.Name,
+                                itemType = currentFile.Extension,
+                                itemDateChanged = currentFile.LastWriteTime,
+                                itemSize = SizeConversion(currentFile.Length),
+                                itemPath = currentFile.DirectoryName
+                            };
+                            _itemsInfo.Add(item);
+                        }
+
+                        foreach (DirectoryInfo currentDir in _dirs)
+                        {
+                            currentSizeOfDirStr = "...";
+
+                            item = new Item
+                            {
+                                itemName = currentDir.Name,
+                                itemType = "Папка с файлами",
+                                itemDateChanged = currentDir.LastWriteTime,
+                                itemSize = currentSizeOfDirStr,
+                                itemPath = currentDir.FullName
+                            };
+
+                            _itemsInfo.Add(item);
+
+                            itemActualSize = new Item
+                            {
+                                itemName = currentDir.Name,
+                                itemType = "Папка с файлами",
+                                itemDateChanged = currentDir.LastWriteTime,
+                                itemSize = currentSizeOfDirStr,
+                                itemPath = currentDir.FullName
+                            };
+
+                            currentSizeOfDirStr = SizeConversion(GetDirSize(currentDir.FullName));
+                            
+
+                            itemActualSize.itemSize = currentSizeOfDirStr;
+                            try
+                            {
+                                _itemsInfo[_itemsInfo.IndexOf(item)] = itemActualSize;
+                            }
+                            catch (ArgumentOutOfRangeException)
+                            {
+
+                            }
+                        }
+                    }
+                });
+                thread.Start();
+
             }
             catch (DirectoryNotFoundException directoryNotFound)
             {
@@ -232,13 +300,95 @@ namespace FileManager.ViewModels
             }
             catch (UnauthorizedAccessException unauthorizedAccess)
             {
-                MessageBox.Show(unauthorizedAccess.Message, _title);
-                PathBack();
+                GetItemsInfoFromPath(_pathToItem);
             }
         }
 
         #endregion
 
+        #region OpenSelectedItem
+
+        private void OpenSelectedItem(object parameter)
+        {
+            Thread thread2;
+
+            if (parameter is Item item)
+            {
+
+                try
+                {
+                    _pathToItem = item.itemPath;
+                    GetItemsInfoFromPath(_pathToItem);
+
+                    if (item.itemType != "Папка с файлами" && item.itemType != "Локальный диск")
+                    {
+                        _pathToItem = _pathToItem + "\\" + item.itemName;
+                        Process.Start(new ProcessStartInfo(_pathToItem) { UseShellExecute = true });
+                    }
+                    else
+                    {
+                        OpenSelectedItem(SelectedItem);
+                    }
+                }
+                catch (Win32Exception exception)
+                {
+                    MessageBox.Show(exception.Message, _title);
+                }
+                   
+            }
+        }
+
+
+        #endregion
+
+        #region PathBack
+
+        public void PathBack()
+        {
+            try
+            {
+                if (_pathToItem != null)
+                {
+
+
+                    if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
+                    {
+                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                        while (_pathToItem[_pathToItem.Length - 1] == '\\')
+                        {
+                            _pathToItem = _pathToItem.Remove(_pathToItem.Length - 2, 1);
+                        }
+                    }
+                    else if (_pathToItem[_pathToItem.Length - 1] != '\\')
+                    {
+                        while (_pathToItem[_pathToItem.Length - 1] != '\\')
+                        {
+                            _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                        }
+
+                        if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
+                        {
+                            _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                        }
+                        else
+                        {
+                            GetItemsInfoFromPath(_pathToItem);
+                        }
+                    }
+                    else
+                    {
+                        _itemsInfo.Clear();
+                    }
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                GetLogicalDrivesInfo();
+            }
+        }
+
+        #endregion
+        
         #region GetDirSize
 
         public long GetDirSize(string path)
@@ -263,7 +413,7 @@ namespace FileManager.ViewModels
             }
             catch (UnauthorizedAccessException)
             {
-                
+
             }
 
             return catalogSize;
@@ -271,203 +421,28 @@ namespace FileManager.ViewModels
 
         #endregion
 
-        #region OpenSelectedItem
+        #region SizeConversion
 
-        private void OpenSelectedItem(object parameter)
+        public string SizeConversion(long catalogSize)
         {
-            if (parameter is Item item)
+            if (catalogSize >= 1073741824.0)
             {
-                try
-                {
-                    _pathToItem = item.itemPath;
-                    GetItemsInfoFromPath(_pathToItem);
-
-                    if (item.itemType != "Папка с файлами" && item.itemType != "Локальный диск")
-                    {
-                        _pathToItem = _pathToItem + "\\" + item.itemName;
-                        Process.Start(new ProcessStartInfo(_pathToItem) {UseShellExecute = true});
-                    }
-                    else
-                    {
-                        OpenSelectedItem(SelectedItem);
-                    }
-                }
-                catch (Win32Exception exception)
-                {
-                    MessageBox.Show(exception.Message, _title);
-                }
+                return String.Format("{0:##.##}", catalogSize / 1073741824.0) + " Гб";
             }
-        }
-
-        #endregion
-
-        #region PathBack
-
-        public void PathBack()
-        {
-            try
+            else if (catalogSize >= 1048576.0)
             {
-                if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
-                {
-                    _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
-                    while (_pathToItem[_pathToItem.Length - 1] == '\\')
-                    {
-                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 2, 1);
-                    }
-                }
-                else if (_pathToItem[_pathToItem.Length - 1] != '\\')
-                {
-                    while (_pathToItem[_pathToItem.Length - 1] != '\\')
-                    {
-                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
-                    }
-
-                    if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
-                    {
-                        _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
-                    }
-                    else
-                    {
-                        GetLogicalDrivesInfo();
-                    }
-                }
-                GetItemsInfoFromPath(_pathToItem);
+                return String.Format("{0:##.##}", catalogSize / 1048576.0) + " Мб";
             }
-            catch (IndexOutOfRangeException)
+            else if (catalogSize >= 1024.0)
             {
-                GetLogicalDrivesInfo();
+                return String.Format("{0:##.##}", catalogSize / 1024.0) + " Кб";
             }
-        }
-
-        #endregion
-
-        #region SetSize
-        public async void SetSize(Item item)
-        {
-            await Task.Run(() =>
-            {
-                item.itemSize[0] = Size(GetDirSize(_pathToItem));
-            });
-        }
-
-        #endregion
-
-        #region Size
-
-        public string Size(long catalogSize)
-        {
-            if (catalogSize < 1024.0)
+            else if (catalogSize > 0 && catalogSize < 1024.0)
             {
                 return catalogSize.ToString() + " б";
             }
-            else if ((catalogSize / 1024) < 1024)
-            {
-                return (catalogSize / 1024).ToString() + " Кб";
-            }
-            else if ((catalogSize / 1024 / 1024) < 1024)
-            {
-                return (catalogSize / 1024 / 1024).ToString() + " Мб";
-            }
-            else if ((catalogSize / 1024 / 1024 / 1024) < 1024)
-            {
-                return (catalogSize / 1024 / 1024 / 1024).ToString() + " Гб";
-            }
-            else
-            {
-                return (catalogSize / 1024 / 1024 / 1024 / 1024).ToString() + " Тб";
-            }
-        }
 
-        #endregion
-
-        #region SetDirs
-
-        public async void SetDirs(DirectoryInfo dir)
-        {
-            try
-            {
-                await Task.Run(() =>
-                {
-                    _dirs = dir.GetDirectories();
-
-                    lock (_itemsLock)
-                    {
-                        foreach (DirectoryInfo currentDir in _dirs)
-                        {
-                            var itemSizee = new ObservableCollection<string>();
-
-                            //await Task.Delay(10);
-
-                            itemSizee.Add("...");
-
-
-                            // Once locked, you can manipulate the collection safely from another thread
-
-                            Item item = new Item
-                            {
-                                itemName = currentDir.Name,
-                                itemType = "Папка с файлами",
-                                itemDateChanged = currentDir.LastWriteTime,
-                                itemSize = itemSizee,
-                                itemPath = currentDir.FullName
-                            };
-
-
-                            _itemsInfo.Add(item);
-                        }
-
-                        foreach (var item in _itemsInfo)
-                        {
-                            //await Task.Delay(10);
-
-                            if (item.itemType == "Папка с файлами")
-                            {
-                                SetSize(item);
-                            }
-                        }
-                    }
-                });
-            }
-            catch (InvalidOperationException)
-            {
-
-            }
-        }
-
-        #endregion
-
-        #region SetFiles
-
-        public async void SetFiles(DirectoryInfo dir)
-        {
-            await Task.Run(() =>
-            {
-                _files = dir.GetFiles();
-                lock (_itemsLock)
-                {
-                    foreach (FileInfo currentFile in _files)
-                    {
-                        var itemSizee = new ObservableCollection<string>();
-
-                        //await Task.Delay(10);
-
-                        itemSizee.Add(Size(currentFile.Length));
-
-
-
-                        Item item = new Item
-                        {
-                            itemName = currentFile.Name,
-                            itemType = currentFile.Extension,
-                            itemDateChanged = currentFile.LastWriteTime,
-                            itemSize = itemSizee,
-                            itemPath = currentFile.DirectoryName
-
-                        };
-                        _itemsInfo.Add(item);
-                    }
-                }
-            });
+            return catalogSize.ToString() + " б";
         }
 
         #endregion
@@ -475,4 +450,5 @@ namespace FileManager.ViewModels
         #endregion
         /*---------------------------------------------------------------------------------------------------------------*/
     }
+
 }

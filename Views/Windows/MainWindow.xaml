@@ -9,7 +9,7 @@
         xmlns:cmd="clr-namespace:FileManager.Infrastructure.Commands"
         xmlns:local="clr-namespace:FileManager"
         Title="{Binding Title}" 
-        Height="450" Width="800">
+        Height="500" Width="800">
     <Window.DataContext>
         <vm:MainWindowViewModel/>
     </Window.DataContext>
@@ -23,16 +23,15 @@
             </MenuItem>
         </Menu>
         <Grid>
-            <Button Content="Назад" Margin="10,10,0,0" VerticalAlignment="Top" Command="{Binding PathBackCommand}" HorizontalAlignment="Left" Width="45"/>
-
+            <Button Content="Назад" Margin="10,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" Command="{Binding PathBackCommand}"/>
             <TextBox Margin="60,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                 <TextBox.InputBindings>
-                    <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand, IsAsync=True}" Gesture="Enter"/>
+                    <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand, UpdateSourceTrigger=PropertyChanged}" Gesture="Enter"/>
                 </TextBox.InputBindings>
             </TextBox>
             <DataGrid 
                 x:Name="DataGrid"
-                Margin="10,40,10,10" 
+                Margin="10,40,10,35" 
                 ColumnWidth="100*" 
                 AutoGenerateColumns="False" 
                 CanUserAddRows="False" 
@@ -41,23 +40,30 @@
                 GridLinesVisibility="None" 
                 HeadersVisibility="All"
                 IsReadOnly="True"
-                ItemsSource="{Binding ItemsInfo}"
-                SelectedItem="{Binding SelectedItem}">
+                ItemsSource="{Binding ItemsInfo, UpdateSourceTrigger=PropertyChanged}"
+                SelectedItem="{Binding SelectedItem}"
+                IsEnabled="{Binding IsDataGridEnabled, UpdateSourceTrigger=PropertyChanged}">
 
                 <b:Interaction.Triggers>
                     <b:EventTrigger EventName="MouseDoubleClick">
                         <b:InvokeCommandAction 
-                            Command="{Binding OpenSelectedItemCommand}"
-                            CommandParameter="{Binding SelectedItem}">
-                        </b:InvokeCommandAction>
+                            Command="{Binding OpenSelectedItemCommand, UpdateSourceTrigger=PropertyChanged}"
+                            CommandParameter="{Binding SelectedItem, UpdateSourceTrigger=PropertyChanged}"/>
                     </b:EventTrigger>
                 </b:Interaction.Triggers>
 
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Имя" Binding="{Binding itemName}"/>
                     <DataGridTextColumn Header="Дата изменения" Binding="{Binding itemDateChanged}" />
-                    <DataGridTextColumn Header="Тип" Binding="{Binding itemType}"/>
-                    <DataGridTextColumn Header="Размер" Binding="{Binding itemSize.Item[0]}"/>
+                    <DataGridTextColumn Header="Тип" Binding="{Binding itemType}" Width="75*"/>
+                    <DataGridTextColumn Header="Размер" Binding="{Binding itemSize}" Width="50*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                <Setter Property="Margin" Value="0,0,40,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

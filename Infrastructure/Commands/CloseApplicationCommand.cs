@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace FileManager.Infrastructure.Commands
 {
-    internal class CloseApplicationCommand : Command
+    class CloseApplicationCommand : Command
     {
         public override bool CanExecute(object parameter) => true;
         public override void Execute(object parameter) => Application.Current.Shutdown();
