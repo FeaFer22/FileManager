@@ -79,13 +79,8 @@ namespace FileManager.ViewModels
 
         #region Получение выделенного объекта datagrid
 
-        private string _executionStatus = "Загрузка...";
-
-        public string ExecutionStatus
-        {
-            get => _executionStatus;
-            set => Set(ref _executionStatus, value);
-        }
+        ///<summary>Получение выделенного объекта datagrid</summary>
+        public Item SelectedItem { get; set; }
 
         #endregion
 
@@ -375,10 +370,7 @@ namespace FileManager.ViewModels
                         {
                             _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
                         }
-                        else
-                        {
-                            GetItemsInfoFromPath(_pathToItem);
-                        }
+                        GetItemsInfoFromPath(_pathToItem);
                     }
                     else
                     {
