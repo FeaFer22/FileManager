@@ -38,7 +38,7 @@
                 CanUserDeleteRows="False" 
                 CanUserResizeRows="False"
                 GridLinesVisibility="None" 
-                HeadersVisibility="All"
+                HeadersVisibility="Column"
                 ItemsSource="{Binding ItemsInfo, UpdateSourceTrigger=PropertyChanged}"
                 SelectedItem="{Binding SelectedItem}"
                 IsEnabled="{Binding IsDataGridEnabled}">
