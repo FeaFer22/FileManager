@@ -28,6 +28,7 @@ namespace FileManager.ViewModels
 
         private object _itemsLock;
 
+
         #region Заголовок окна
 
         private string _title = "Файловый менеджер";
@@ -99,6 +100,21 @@ namespace FileManager.ViewModels
 
         #endregion
 
+        #region LoadingStatus
+
+        private string _loadingStatus;
+
+        public string LoadingStatus
+        {
+            get => _loadingStatus;
+            set
+            {
+                Set(ref _loadingStatus, value);
+            }
+        }
+
+        #endregion
+
         /*---------------------------------------------------------------------------------------------------------------*/
 
         #region Команды
@@ -109,7 +125,10 @@ namespace FileManager.ViewModels
 
         private bool CanCloseApplicationCommandExecute(object obj) => true;
 
-        private void OnCloseApplicationCommandExecuted(object obj) => Application.Current.Shutdown();
+        private void OnCloseApplicationCommandExecuted(object obj)
+        {
+            Application.Current.Shutdown();
+        }
 
         #endregion
 
@@ -269,7 +288,7 @@ namespace FileManager.ViewModels
 
                             currentSizeOfDirStr = SizeConversion(GetDirSize(currentDir.FullName));
                             
-
+                            
                             itemActualSize.itemSize = currentSizeOfDirStr;
                             try
                             {
@@ -282,8 +301,20 @@ namespace FileManager.ViewModels
                         }
                     }
                 });
+                thread.IsBackground = true;
                 thread.Start();
 
+                Thread thread2 = new Thread(() =>
+                {
+                    while (thread.IsAlive == true)
+                    {
+                        IsDataGridEnabled = false;
+                        LoadingStatus = "Загрузка...";
+                    }
+                    IsDataGridEnabled = true;
+                    LoadingStatus = "Завершено!";
+                });
+                thread2.Start();
             }
             catch (DirectoryNotFoundException directoryNotFound)
             {
@@ -300,7 +331,8 @@ namespace FileManager.ViewModels
             }
             catch (UnauthorizedAccessException unauthorizedAccess)
             {
-                GetItemsInfoFromPath(_pathToItem);
+                MessageBox.Show(unauthorizedAccess.Message, _title);
+                PathBack();
             }
         }
 
@@ -317,7 +349,7 @@ namespace FileManager.ViewModels
 
                 try
                 {
-                    _pathToItem = item.itemPath;
+                    PathToItem = item.itemPath;
                     GetItemsInfoFromPath(_pathToItem);
 
                     if (item.itemType != "Папка с файлами" && item.itemType != "Локальный диск")
@@ -343,20 +375,20 @@ namespace FileManager.ViewModels
 
         #region PathBack
 
-        public void PathBack()
+        public string PathBack()
         {
             try
             {
                 if (_pathToItem != null)
                 {
-
-
                     if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
                     {
                         _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                        PathToItem = PathToItem.Remove(PathToItem.Length - 1, 1);
                         while (_pathToItem[_pathToItem.Length - 1] == '\\')
                         {
                             _pathToItem = _pathToItem.Remove(_pathToItem.Length - 2, 1);
+                            PathToItem = PathToItem.Remove(PathToItem.Length - 2, 1);
                         }
                     }
                     else if (_pathToItem[_pathToItem.Length - 1] != '\\')
@@ -364,17 +396,20 @@ namespace FileManager.ViewModels
                         while (_pathToItem[_pathToItem.Length - 1] != '\\')
                         {
                             _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+                            PathToItem = PathToItem.Remove(PathToItem.Length - 1, 1);
                         }
 
                         if (_pathToItem[_pathToItem.Length - 1] == '\\' && _pathToItem[_pathToItem.Length - 2] != ':')
                         {
                             _pathToItem = _pathToItem.Remove(_pathToItem.Length - 1, 1);
+
                         }
                         GetItemsInfoFromPath(_pathToItem);
                     }
                     else
                     {
                         _itemsInfo.Clear();
+                        GetLogicalDrivesInfo();
                     }
                 }
             }
@@ -382,6 +417,8 @@ namespace FileManager.ViewModels
             {
                 GetLogicalDrivesInfo();
             }
+
+            return _pathToItem;
         }
 
         #endregion
