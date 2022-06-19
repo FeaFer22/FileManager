@@ -9,7 +9,8 @@
         xmlns:cmd="clr-namespace:FileManager.Infrastructure.Commands"
         xmlns:local="clr-namespace:FileManager"
         Title="{Binding Title}" 
-        Height="500" Width="800">
+        Height="500" Width="800"
+        MinHeight="300" MinWidth="600">
     <Window.DataContext>
         <vm:MainWindowViewModel/>
     </Window.DataContext>
@@ -38,7 +39,7 @@
                 CanUserDeleteRows="False" 
                 CanUserResizeRows="False"
                 GridLinesVisibility="None" 
-                HeadersVisibility="All"
+                HeadersVisibility="Column"
                 ItemsSource="{Binding ItemsInfo, UpdateSourceTrigger=PropertyChanged}"
                 SelectedItem="{Binding SelectedItem}"
                 IsEnabled="{Binding IsDataGridEnabled}">

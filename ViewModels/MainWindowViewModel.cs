@@ -143,7 +143,10 @@ namespace FileManager.ViewModels
 
         private void OnUpdateItemsInfoFromPathCommandExecuted(object obj)
         {
-            GetItemsInfoFromPath(_pathToItem);
+            if (ItemsInfo.Count == 0)
+            {
+                GetItemsInfoFromPath(_pathToItem);
+            }
         }
 
 
