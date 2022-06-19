@@ -16,7 +16,7 @@ using ThreadState = System.Threading.ThreadState;
 
 namespace FileManager.ViewModels
 {
-    class MainWindowViewModel : ViewModel
+    public class MainWindowViewModel : ViewModel
     {
         /*---------------------------------------------------------------------------------------------------------------*/
 
@@ -245,7 +245,6 @@ namespace FileManager.ViewModels
 
                 thread = new Thread(() =>
                 {
-                    long currentSizeOfDir;
                     string currentSizeOfDirStr;
 
                     Item item, itemActualSize;
@@ -345,8 +344,6 @@ namespace FileManager.ViewModels
 
         private void OpenSelectedItem(object parameter)
         {
-            Thread thread2;
-
             if (parameter is Item item)
             {
 
