@@ -23,15 +23,15 @@
             </MenuItem>
         </Menu>
         <Grid>
-            <Button Content="Назад" Margin="10,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" Command="{Binding PathBackCommand}"/>
-            <TextBox Margin="60,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+            <Button Content="Назад" Margin="10,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="45" Command="{Binding PathBackCommand}" IsEnabled="{Binding IsDataGridEnabled}"/>
+            <TextBox Margin="60,10,10,0" Height="20" VerticalAlignment="Top" FontSize="14" Text="{Binding PathToItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsDataGridEnabled}">
                 <TextBox.InputBindings>
                     <KeyBinding Command="{Binding UpdateItemsInfoFromPathCommand, UpdateSourceTrigger=PropertyChanged}" Gesture="Enter"/>
                 </TextBox.InputBindings>
             </TextBox>
             <DataGrid 
                 x:Name="DataGrid"
-                Margin="10,40,10,35" 
+                Margin="10,40,10,45" 
                 ColumnWidth="100*" 
                 AutoGenerateColumns="False" 
                 CanUserAddRows="False" 
@@ -39,10 +39,9 @@
                 CanUserResizeRows="False"
                 GridLinesVisibility="None" 
                 HeadersVisibility="All"
-                IsReadOnly="True"
                 ItemsSource="{Binding ItemsInfo, UpdateSourceTrigger=PropertyChanged}"
                 SelectedItem="{Binding SelectedItem}"
-                IsEnabled="{Binding IsDataGridEnabled, UpdateSourceTrigger=PropertyChanged}">
+                IsEnabled="{Binding IsDataGridEnabled}">
 
                 <b:Interaction.Triggers>
                     <b:EventTrigger EventName="MouseDoubleClick">
@@ -66,6 +65,8 @@
                     </DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
+            <Label Content="Статус: " HorizontalAlignment="Left" Margin="10,0,0,15" Height="30" VerticalAlignment="Bottom"/>
+            <Label Content="{Binding LoadingStatus}"  HorizontalAlignment="Left" Margin="66,0,0,15" Height="30" VerticalAlignment="Bottom"/>
         </Grid>
     </DockPanel>
 </Window>
