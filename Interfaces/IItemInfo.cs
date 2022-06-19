@@ -3,7 +3,7 @@ using System.IO.Packaging;
 
 namespace FileManager.Models
 {
-    internal interface IItemInfo
+    interface IItemInfo
     {
         public string itemName { get; set; }
         public DateTime itemDateChanged { get; set; }

@@ -3,7 +3,7 @@ using System;
 
 namespace FileManager.Infrastructure.Commands
 {
-    internal class ActionCommand : Command
+    class ActionCommand : Command
     {
         private readonly Action<object> _Execute;
         private readonly Func<object, bool> _CanExecute;

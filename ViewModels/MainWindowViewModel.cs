@@ -16,7 +16,7 @@ using ThreadState = System.Threading.ThreadState;
 
 namespace FileManager.ViewModels
 {
-    class MainWindowViewModel : ViewModel
+    public class MainWindowViewModel : ViewModel
     {
         /*---------------------------------------------------------------------------------------------------------------*/
 
